@@ -29,19 +29,17 @@ root_folder = 'ACCS_Work'
 
 # Define folder structure
 project_folder = os.path.join(drive, root_folder, 'Projects/VegetationEcology/DoD_Navy_Arctic/Data')
-image_folder = os.path.join(project_folder, 'Data_Input/imagery_data')
 output_folder = os.path.join(project_folder, 'Data_Input/rasterized_data')
 geodatabase = os.path.join(project_folder, 'DoD_Navy_Arctic.gdb')
 
-# Define input files
-icycape_input = os.path.join(image_folder, 'IcyCape_Imagery_20200714_0.5m_3338.tif')
-utqiagvik_input = os.path.join(image_folder, 'Utqiagvik_Imagery_20240710_0.5m_3338.tif')
-mcintyre_input = os.path.join(image_folder, 'Kuparuk_Imagery_20220803_0.5m_3338.tif')
+# Define area features
+icycape_input = os.path.join(output_folder, 'IcyCape_StudyArea_0.5m_3338.tif')
+utqiagvik_input = os.path.join(output_folder, 'Utqiagvik_StudyArea_0.5m_3338.tif')
+mcintyre_input = os.path.join(output_folder, 'McIntyre_StudyArea_0.5m_3338.tif')
 
 # Define input features
 area_list = ['IcyCape_StudyArea_3338', 'Utqiagvik_StudyArea_3338', 'McIntyre_StudyArea_3338']
-feature_list = ['IcyCape_StudyArea_3338', 'Utqiagvik_StudyArea_3338', 'McIntyre_StudyArea_3338',
-                'IcyCape_CoastalZone_3338', 'Utqiagvik_CoastalZone_3338', 'McIntyre_CoastalZone_3338',
+feature_list = ['IcyCape_CoastalZone_3338', 'Utqiagvik_CoastalZone_3338', 'McIntyre_CoastalZone_3338',
                 'IcyCape_Correction_Water_3338', 'IcyCape_Correction_SaltIntruded_3338',
                 'IcyCape_Correction_Disturbed_3338', 'IcyCape_Correction_TidalMarsh_3338',
                 'IcyCape_Correction_Coast_3338',
@@ -50,7 +48,8 @@ feature_list = ['IcyCape_StudyArea_3338', 'Utqiagvik_StudyArea_3338', 'McIntyre_
                 'McIntyre_Correction_Water_3338', 'McIntyre_Correction_SaltIntruded_3338',
                 'McIntyre_Correction_Barren_3338', 'McIntyre_Dunes_3338', 'McIntyre_Floodplain_3338',
                 'McIntyre_Correction_Disturbed_3338', 'McIntyre_Correction_Beach_3338',
-                'IcyCape_Infrastructure_3338', 'Utqiagvik_Infrastructure_3338', 'McIntyre_Infrastructure_3338']
+                'IcyCape_Infrastructure_3338', 'Utqiagvik_Infrastructure_3338', 'McIntyre_Infrastructure_3338',
+                'IcyCape_Installation_3338', 'Utqiagvik_Installation_3338', 'McIntyre_Installation_3338']
 
 #### RASTERIZE FEATURES
 ####____________________________________________________
@@ -68,13 +67,13 @@ for feature in feature_list:
 
         # Define snap raster and study area
         if 'icycape' in feature.lower():
-            image_input = icycape_input
+            grid_input = icycape_input
             study_area = gpd.read_file(geodatabase, layer=area_list[0])
         elif 'utqiagvik' in feature.lower():
-            image_input = utqiagvik_input
+            grid_input = utqiagvik_input
             study_area = gpd.read_file(geodatabase, layer=area_list[1])
         elif 'mcintyre' in feature.lower():
-            image_input = mcintyre_input
+            grid_input = mcintyre_input
             study_area = gpd.read_file(geodatabase, layer=area_list[2])
         else:
             print('ERROR: Check input feature name.')
@@ -84,7 +83,7 @@ for feature in feature_list:
         min_x, min_y, max_x, max_y = study_area.total_bounds
 
         # Align reference grid
-        with rasterio.open(image_input) as src:
+        with rasterio.open(grid_input) as src:
             # Calculate the pixel window in the image that covers the vector bounds
             window = from_bounds(min_x, min_y, max_x, max_y, src.transform)
 

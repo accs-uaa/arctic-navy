@@ -37,7 +37,7 @@ input_folder = os.path.join(project_folder, 'Data_Input/rasterized_data')
 distance_folder = os.path.join(project_folder, 'Data_Input/distance_data/processed')
 foliar_folder = os.path.join(project_folder, 'Data_Output/foliar_data')
 surficial_folder = os.path.join(project_folder, 'Data_Output/surficial_data')
-output_folder = os.path.join(project_folder, 'Data_Output/vegetation_data')
+output_folder = os.path.join(project_folder, 'Data_Output/vegetation_data/unprocessed')
 
 # Define input files
 area_input = os.path.join(input_folder, f'{region}_StudyArea_0.5m_3338.tif')
