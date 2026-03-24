@@ -338,27 +338,6 @@ with rasterio.open(vegetation_output, 'r+') as dst:
     dst.update_tags(ns='rio_overview', resampling='mode')
 end_timing(iteration_start)
 
-#### LOAD POST-PROCESSING DICTIONARIES
-####____________________________________________________
-
-# Get the unique raster values actually present in your final array
-raster_values = np.unique(final_array)
-raster_values = set(raster_values[raster_values != nodata_value])
-
-# Load the JSON data
-with open(label_input, 'r') as f:
-    raw_labels = json.load(f)
-with open(color_input, 'r') as f:
-    raw_colors = json.load(f)
-
-# Build the dictionaries and remove values that do not appear in the raster
-value_labels = {
-    int(k): v for k, v in raw_labels.items() if int(k) in raster_values
-}
-value_colors = {
-    int(k): v for k, v in raw_colors.items() if int(k) in raster_values
-}
-
 #### BUILD RASTER ATTRIBUTE TABLE
 ####____________________________________________________
 
@@ -410,6 +389,13 @@ attribute_table = dbf.Table(
     'VALUE N(10,0); COUNT N(20,0); LABEL C(64)'
 )
 
+# Load the JSON label data
+with open(label_input, 'r') as f:
+    raw_labels = json.load(f)
+value_labels = {
+    int(k): v for k, v in raw_labels.items() if int(k) in unique_values
+}
+
 # Write attribute table
 attribute_table.open(mode=dbf.READ_WRITE)
 for value in unique_values:
@@ -425,6 +411,13 @@ attribute_table.close()
 colormap_output = vegetation_output + '.clr'
 if os.path.exists(colormap_output):
     os.remove(colormap_output)
+
+# Load the JSON color data
+with open(color_input, 'r') as f:
+    raw_colors = json.load(f)
+value_colors = {
+    int(k): v for k, v in raw_colors.items() if int(k) in unique_values
+}
 
 # Write colormap
 print('Writing colormap...')
