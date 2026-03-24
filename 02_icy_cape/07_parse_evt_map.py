@@ -33,6 +33,7 @@ root_folder = 'ACCS_Work'
 
 # Define folder structure
 project_folder = os.path.join(drive, root_folder, 'Projects/VegetationEcology/DoD_Navy_Arctic/Data')
+repository_folder = os.path.join(drive, root_folder, 'Repositories/arctic-navy')
 input_folder = os.path.join(project_folder, 'Data_Input/rasterized_data')
 distance_folder = os.path.join(project_folder, 'Data_Input/distance_data/processed')
 foliar_folder = os.path.join(project_folder, 'Data_Output/foliar_data')
@@ -40,6 +41,8 @@ surficial_folder = os.path.join(project_folder, 'Data_Output/surficial_data')
 output_folder = os.path.join(project_folder, 'Data_Output/vegetation_data/unprocessed')
 
 # Define input files
+label_input = os.path.join(repository_folder, 'value_labels.json')
+color_input = os.path.join(repository_folder, 'value_colors.json')
 area_input = os.path.join(input_folder, f'{region}_StudyArea_0.5m_3338.tif')
 surficial_input = os.path.join(surficial_folder, f'{region}_Surficial_0.5m_3338.tif')
 dryas_input = os.path.join(foliar_folder, f'{region}_dryas_0.5m_3338.tif')
@@ -311,27 +314,29 @@ with rasterio.open(vegetation_output, 'r+') as dst:
     dst.update_tags(ns='rio_overview', resampling='mode')
 end_timing(iteration_start)
 
-#### BUILD RASTER ATTRIBUTE TABLE
+#### LOAD POST-PROCESSING DICTIONARIES
 ####____________________________________________________
 
-# Create dictionary of value labels
+# Get the unique raster values actually present in your final array
+raster_values = np.unique(final_array)
+raster_values = set(raster_values[raster_values != nodata_value])
+
+# Load the JSON data
+with open(label_input, 'r') as f:
+    raw_labels = json.load(f)
+with open(color_input, 'r') as f:
+    raw_colors = json.load(f)
+
+# Build the dictionaries and remove values that do not appear in the raster
 value_labels = {
-    142: 'Arctic Sphagnum-Sedge Peatland, Ombrotrophic',
-    143: 'Arctic Brown Moss-Sedge Peatland, Minerotrophic',
-    145: 'Arctic Tussock Dwarf Shrub Tundra',
-    147: 'Arctic Herbaceous Non-tussock Tundra',
-    152: 'Arctic Ericaceous(-Dryas-Willow) Dwarf Shrub',
-    156: 'Arctic Barren & Sparsely Vegetated',
-    158: 'Arctic Coastal & Estuarine Barren',
-    160: 'Arctic Herbaceous Coastal Beach',
-    161: 'Arctic Salt-intruded Tundra',
-    162: 'Arctic Coastal Dwarf Willow Graminoid',
-    163: 'Arctic Coastal Salt Marsh',
-    170: 'Arctic Freshwater Marsh',
-    173: 'Disturbed Vegetation',
-    174: 'Infrastructure',
-    176: 'Water'
+    int(k): v for k, v in raw_labels.items() if int(k) in raster_values
 }
+value_colors = {
+    int(k): v for k, v in raw_colors.items() if int(k) in raster_values
+}
+
+#### BUILD RASTER ATTRIBUTE TABLE
+####____________________________________________________
 
 # Specify attribute table file path
 attribute_output = vegetation_output + '.vat.dbf'
@@ -390,25 +395,6 @@ attribute_table.close()
 
 #### CREATE COLOR MAP
 ####____________________________________________________
-
-# Create dictionary of value hex colors
-value_colors = {
-    142: '87C58F',
-    143: 'B6BF8C',
-    145: '730000',
-    147: '35CECD',
-    152: '3B5D6C',
-    156: 'FFEAC2',
-    158: 'FFEAC2',
-    160: '897044',
-    161: '000000',
-    162: '7AF5CA',
-    163: '00A884',
-    170: 'E8BEFF',
-    173: 'FFBEBE',
-    174: 'FF0000',
-    176: 'BEE8FF'
-}
 
 # Specify colormap file path
 colormap_output = vegetation_output + '.clr'

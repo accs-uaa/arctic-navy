@@ -8,7 +8,7 @@
 # ---------------------------------------------------------------------------
 
 # Define region
-region = 'IcyCape'
+region = 'McIntyre'
 
 # Import packages
 import os

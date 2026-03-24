@@ -112,6 +112,8 @@ def categorical_nibble(input_array, nodata_val):
 
 #### LOAD RASTER DATA
 ####____________________________________________________
+print('Loading rasters into memory...')
+start_time = time.time()
 
 # Load area raster data
 with rasterio.open(area_input) as area_raster:
@@ -151,6 +153,7 @@ with rasterio.open(segment_input) as segment_raster:
         boundless=True,
         fill_value=nodata_value
     )
+end_timing(start_time)
 
 #### CALCULATE SEGMENT STATISTICS
 ####____________________________________________________
@@ -252,6 +255,8 @@ end_timing(start_time)
 
 #### PARSE FUNCTIONAL TYPES
 ####____________________________________________________
+print('Processing functional splits...')
+start_time = time.time()
 
 # Define Functional Types
 coastal_list = [158, 159, 160, 161, 162, 163]
@@ -266,8 +271,6 @@ mesic_mask = ~(coastal_mask | wet_mask | omitted_mask | (rescaled_array == nodat
 end_timing(start_time)
 
 # Parse functional types
-print('Processing functional splits...')
-start_time = time.time()
 coastal_sieve = apply_sieve(coastal_mask, rescaled_array, nodata_value, mmu_pixels=25)
 wet_sieve = apply_sieve(wet_mask, rescaled_array, nodata_value, mmu_pixels=25)
 mesic_sieve = apply_sieve(mesic_mask, rescaled_array, nodata_value, mmu_pixels=25)
@@ -284,7 +287,7 @@ merged_array = np.where(coastal_sieve != nodata_value, coastal_sieve,
                                  np.where(mesic_sieve != nodata_value, mesic_sieve, nodata_value)))
 
 # Enforce mmu on the merged raster
-print('\tConducting final sieve and nibble on merged data...')
+print('\tConducting final sieve iterations on merged data...')
 final_sieve = features.sieve(merged_array, size=36, connectivity=8)
 final_sieve = features.sieve(final_sieve, size=64, connectivity=8)
 final_sieve = features.sieve(final_sieve, size=100, connectivity=8)
@@ -307,9 +310,14 @@ final_array = np.where(omitted_mask, rescaled_array, final_array)
 print('\tExtracting to study area...')
 final_array = np.where(area_array == 1, final_array, nodata_value)
 
+# Update the input metadata dictionary for the output export
+output_profile.update(dtype=rasterio.uint8,
+                      count=1,
+                      nodata=nodata_value,
+                      compress='lzw')
+
 # Export final raster
 print('\tExporting vegetation raster...')
-output_profile.update(dtype=rasterio.uint8, count=1, nodata=nodata_value, compress='lzw')
 with rasterio.open(vegetation_output, 'w', **output_profile) as out_raster:
     out_raster.write(final_array, 1)
 end_timing(start_time)
