@@ -2,7 +2,7 @@
 # ---------------------------------------------------------------------------
 # Summarize to segments
 # Author: Timm Nawrocki
-# Last Updated: 2026-03-23
+# Last Updated: 2026-04-23
 # Usage: Must be executed in a Python 3.12+ installation.
 # Description: 'Summarize to segments' resamples the raster to a 2 m resolution, summarizes to image segments, and re-scales the output to 1:10,000.
 # ---------------------------------------------------------------------------
@@ -26,10 +26,18 @@ from scipy.ndimage import distance_transform_edt
 from akutils import *
 
 # Define nodata value
-nodata_value = 255
+nodata_value = np.uint8(255)
 
 # Define heterogeneity threshold to determine polygonal complexes
 heterogeneity_threshold = 0.1
+
+# Define year variable
+if region == 'IcyCape':
+    year = 2020
+elif region == 'McIntyre':
+    year = 2022
+else:
+    year = 2024
 
 #### SET UP DIRECTORIES AND FILES
 ####____________________________________________________
@@ -42,30 +50,29 @@ root_folder = 'ACCS_Work'
 project_folder = os.path.join(drive, root_folder, 'Projects/VegetationEcology/DoD_Navy_Arctic/Data')
 repository_folder = os.path.join(drive, root_folder, 'Repositories/arctic-navy')
 segment_folder = os.path.join(project_folder, 'Data_Output/segment_data')
-input_folder = os.path.join(project_folder, 'Data_Output/vegetation_data/unprocessed')
-output_folder = os.path.join(project_folder, 'Data_Output/vegetation_data/processed')
+output_folder = os.path.join(project_folder, 'Data_Output/vegetation_data')
 
 # Define input datasets
 area_input = os.path.join(project_folder, f'Data_Input/rasterized_data/{region}_StudyArea_2m_3338.tif')
 segment_input = os.path.join(segment_folder, f'{region}_Segments_2m_3338.tif')
-vegetation_input = os.path.join(input_folder, f'{region}_Vegetation_0.5m_3338.tif')
+vegetation_input = os.path.join(output_folder, f'{region}_Vegetation_{year}_0.5m_3338.tif')
 label_input = os.path.join(repository_folder, 'value_labels.json')
 color_input = os.path.join(repository_folder, 'value_colors.json')
 
 # Define output datasets
-vegetation_output = os.path.join(output_folder, f'{region}_Vegetation_900mmu_2m_3338.tif')
+vegetation_output = os.path.join(output_folder, f'{region}_Vegetation_{year}_900mmu_2m_3338.tif')
 
 #### DEFINE FUNCTIONS
 ####____________________________________________________
 
 def apply_sieve(target_mask, type_array, nodata_value, mmu_pixels=8):
-    # Isolate target data
-    isolated_array = np.where(target_mask, type_array, nodata_value)
+    # Isolate target data and force 8-bit integer type
+    isolated_array = np.where(target_mask, type_array, nodata_value).astype(np.uint8)
 
     # Apply Sieve Filter (see GDAL Sieve)
     sieve_array = features.sieve(isolated_array, size=mmu_pixels, connectivity=8)
 
-    return sieve_array
+    return sieve_array.astype(np.uint8)
 
 def apply_majority_filter(input_array, nodata_value):
     # Pad array by 1 pixel on all sides to prevent edge data loss
@@ -261,7 +268,7 @@ start_time = time.time()
 # Define Functional Types
 coastal_list = [158, 159, 160, 161, 162, 163]
 wet_list = [142, 143, 170, 171, 180]
-omitted_list = [173, 174, 176]
+omitted_list = [173, 174, 176, 177]
 
 # Create masks
 coastal_mask = np.isin(rescaled_array, coastal_list)
@@ -284,7 +291,7 @@ start_time = time.time()
 # Merge rasters
 merged_array = np.where(coastal_sieve != nodata_value, coastal_sieve,
                         np.where(wet_sieve != nodata_value, wet_sieve,
-                                 np.where(mesic_sieve != nodata_value, mesic_sieve, nodata_value)))
+                                 np.where(mesic_sieve != nodata_value, mesic_sieve, nodata_value))).astype(np.uint8)
 
 # Enforce mmu on the merged raster
 print('\tConducting final sieve iterations on merged data...')
@@ -306,15 +313,25 @@ final_array = apply_majority_filter(final_nibble, nodata_value)
 print('\tAdding omitted data...')
 final_array = np.where(omitted_mask, rescaled_array, final_array)
 
+# Correct the portion of the study area not covered by segments (i.e., omitted marine water)
+print('\tCorrecting omitted water...')
+final_array = np.where(segment_2m_array == 0, 177, final_array)
+
 # Extract to study area
 print('\tExtracting to study area...')
 final_array = np.where(area_array == 1, final_array, nodata_value)
 
 # Update the input metadata dictionary for the output export
-output_profile.update(dtype=rasterio.uint8,
-                      count=1,
-                      nodata=nodata_value,
-                      compress='lzw')
+output_profile.update({
+    'nodata': nodata_value,
+    'dtype': 'uint8',
+    'compress': 'lzw',
+    'bigtiff': 'NO',
+    'tiled': True,
+    'blockxsize': 512,
+    'blockysize': 512,
+    'count': 1
+})
 
 # Export final raster
 print('\tExporting vegetation raster...')

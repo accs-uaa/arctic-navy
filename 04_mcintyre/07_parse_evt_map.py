@@ -2,7 +2,7 @@
 # ---------------------------------------------------------------------------
 # Parse EVT map 1:2,500 scale
 # Author: Timm Nawrocki
-# Last Updated: 2026-03-21
+# Last Updated: 2026-04-23
 # Usage: Must be executed in a Python 3.12+ installation.
 # Description: "Parse EVT map 1:2,500 scale" implements a programmatic key to creat an existing vegetation type map at 1:2,500 scale based on surficial features, foliar cover, and ancillary data.
 # ---------------------------------------------------------------------------
@@ -23,7 +23,15 @@ import dbf
 from akutils import *
 
 # Set no data
-nodata_value = 255
+nodata_value = np.uint8(255)
+
+# Define year variable
+if region == 'IcyCape':
+    year = 2020
+elif region == 'McIntyre':
+    year = 2022
+else:
+    year = 2024
 
 #### SET UP DIRECTORIES, FILES, AND FIELDS
 ####____________________________________________________
@@ -39,7 +47,7 @@ input_folder = os.path.join(project_folder, 'Data_Input/rasterized_data')
 distance_folder = os.path.join(project_folder, 'Data_Input/distance_data/processed')
 foliar_folder = os.path.join(project_folder, 'Data_Output/foliar_data')
 surficial_folder = os.path.join(project_folder, 'Data_Output/surficial_data')
-output_folder = os.path.join(project_folder, 'Data_Output/vegetation_data/unprocessed')
+output_folder = os.path.join(project_folder, 'Data_Output/vegetation_data')
 
 # Define input files
 label_input = os.path.join(repository_folder, 'value_labels.json')
@@ -66,7 +74,7 @@ distcor_input = os.path.join(input_folder, f'{region}_Correction_Disturbed_0.5m_
 beachcor_input = os.path.join(input_folder, f'{region}_Correction_Beach_0.5m_3338.tif')
 
 # Define output file
-vegetation_output = os.path.join(output_folder, f'{region}_Vegetation_0.5m_3338.tif')
+vegetation_output = os.path.join(output_folder, f'{region}_Vegetation_{year}_0.5m_3338.tif')
 
 #### PARSE EXISTING VEGETATION TYPES
 ####____________________________________________________
@@ -105,8 +113,8 @@ output_profile.update({
     'compress': 'lzw',
     'bigtiff': 'NO',
     'tiled': True,
-    'blockxsize': 256,
-    'blockysize': 256
+    'blockxsize': 512,
+    'blockysize': 512
 })
 
 # Define a function to read raster block
@@ -306,20 +314,20 @@ with rasterio.open(vegetation_output, 'w', **output_profile) as dst:
                              & (surficial_block == 2)
                              & ((dryas_block >= 7) | (dsalix_block >= 15))
                              & (nerishr_block < 3)
-                             & (erivag_block < 3),
+                             & (erivag_block < 4),
                              151, out_block)
 
         # 152. Arctic Ericaceous(-Dryas-Willow) Dwarf Shrub
         out_block = np.where((out_block == 0)
                              & (surficial_block == 2)
                              & (nerishr_block > 3)
-                             & (erivag_block < 3),
+                             & (erivag_block < 4),
                              152, out_block)
 
         # 145. Arctic tussock dwarf shrub tundra
         out_block = np.where((out_block == 0)
                              & (surficial_block == 2)
-                             & (erivag_block >= 3),
+                             & (erivag_block >= 4),
                              145, out_block)
 
         # 147. Arctic Herbaceous Non-tussock Tundra
@@ -369,10 +377,17 @@ with rasterio.open(vegetation_output, 'w', **output_profile) as dst:
         out_block = np.where((distcor_block == 1) & (surficial_block != 1),
                              173, out_block)
 
-        # 176. Water
-        out_block = np.where(((out_block == 0) & (surficial_block == 1))
-                             | (watercor_block == 1),
+        #### SPLIT MARINE AND TERRESTRIAL WATER
+
+        # 176. Terrestrial Water
+        out_block = np.where((((out_block == 0) & (surficial_block == 1)) | (watercor_block == 1))
+                             & (coastal_block != 1),
                              176, out_block)
+
+        # 177. Marine/Estuarine Water
+        out_block = np.where((((out_block == 0) & (surficial_block == 1)) | (watercor_block == 1))
+                             & (coastal_block == 1),
+                             177, out_block)
 
         # 160. Arctic Herbaceous Coastal Beach
         out_block = np.where(beachcor_raster == 1,
@@ -393,9 +408,9 @@ with rasterio.open(vegetation_output, 'w', **output_profile) as dst:
 end_timing(iteration_start)
 
 # Close rasters
-for raster in [area_raster, surficial_raster, bromos_raster, dryas_raster, dsalix_raster,
-               erivag_raster, halgra_raster, nerishr_raster, wetsed_raster, water_raster,
-               coastal_raster, infrastructure_raster, watercor_raster, saltcor_raster,
+for raster in [area_raster, surficial_raster, bromos_raster, dryas_raster, dsalix_raster, erivag_raster,
+               halgra_raster, nerishr_raster, sphagn_raster, wetsed_raster, water_raster,
+               coastal_raster, infrastructure_raster, watercor_raster, saltcor_raster, barrencor_raster,
                distcor_raster, beachcor_raster]:
     raster.close()
 

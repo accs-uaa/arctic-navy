@@ -2,7 +2,7 @@
 # ---------------------------------------------------------------------------
 # Enforce minimum mapping unit
 # Author: Timm Nawrocki
-# Last Updated: 2026-03-23
+# Last Updated: 2026-04-23
 # Usage: Must be executed in a Python 3.12+ installation.
 # Description: 'Enforce minimum mapping unit' removes and replaces map units less than 16 pixels in area.
 # ---------------------------------------------------------------------------
@@ -26,7 +26,15 @@ from scipy.ndimage import distance_transform_edt
 from akutils import *
 
 # Define nodata value
-nodata_value = 255
+nodata_value = np.uint8(255)
+
+# Define year variable
+if region == 'IcyCape':
+    year = 2020
+elif region == 'McIntyre':
+    year = 2022
+else:
+    year = 2024
 
 #### SET UP DIRECTORIES AND FILES
 ####____________________________________________________
@@ -39,29 +47,28 @@ root_folder = 'ACCS_Work'
 project_folder = os.path.join(drive, root_folder, 'Projects/VegetationEcology/DoD_Navy_Arctic/Data')
 repository_folder = os.path.join(drive, root_folder, 'Repositories/arctic-navy')
 rasterized_folder = os.path.join(project_folder, 'Data_Input/rasterized_data')
-input_folder = os.path.join(project_folder, 'Data_Output/vegetation_data/unprocessed')
-output_folder = os.path.join(project_folder, 'Data_Output/vegetation_data/processed')
+output_folder = os.path.join(project_folder, 'Data_Output/vegetation_data')
 
 # Define input datasets
 area_input = os.path.join(rasterized_folder, f'{region}_StudyArea_0.5m_3338.tif')
-vegetation_input = os.path.join(input_folder, f'{region}_Vegetation_0.5m_3338.tif')
+vegetation_input = os.path.join(output_folder, f'{region}_Vegetation_{year}_0.5m_3338.tif')
 label_input = os.path.join(repository_folder, 'value_labels.json')
 color_input = os.path.join(repository_folder, 'value_colors.json')
 
 # Define output datasets
-vegetation_output = os.path.join(output_folder, f'{region}_Vegetation_2mmu_0.5m_3338.tif')
+vegetation_output = os.path.join(output_folder, f'{region}_Vegetation_{year}_2mmu_0.5m_3338.tif')
 
 #### DEFINE FUNCTIONS
 ####____________________________________________________
 
 def apply_sieve(target_mask, type_array, nodata_value, mmu_pixels=8):
-    # Isolate target data
-    isolated_array = np.where(target_mask, type_array, nodata_value)
+    # Isolate target data and force 8-bit integer type
+    isolated_array = np.where(target_mask, type_array, nodata_value).astype(np.uint8)
 
     # Apply Sieve Filter (see GDAL Sieve)
     sieve_array = features.sieve(isolated_array, size=mmu_pixels, connectivity=8)
 
-    return sieve_array
+    return sieve_array.astype(np.uint8)
 
 def apply_majority_filter(input_array, nodata_value):
     # Pad array by 1 pixel on all sides to prevent edge data loss
@@ -141,7 +148,7 @@ start_time = time.time()
 # Define Functional Types
 coastal_list = [158, 159, 160, 161, 162, 163]
 wet_list = [142, 143, 170, 171, 180]
-omitted_list = [173, 174, 176]
+omitted_list = [173, 174, 176, 177]
 
 # Create masks
 coastal_mask = np.isin(veg_array, coastal_list)
@@ -164,7 +171,7 @@ start_time = time.time()
 # Merge functional types
 merged_array = np.where(coastal_sieve != nodata_value, coastal_sieve,
                         np.where(wet_sieve != nodata_value, wet_sieve,
-                                 np.where(mesic_sieve != nodata_value, mesic_sieve, nodata_value)))
+                                 np.where(mesic_sieve != nodata_value, mesic_sieve, nodata_value))).astype(np.uint8)
 
 # Enforce mmu on the merged raster
 print('\tConducting final sieve and nibble on merged data...')
@@ -188,12 +195,16 @@ print('\tExtracting to study area...')
 final_array = np.where(area_array == 1, final_array, nodata_value)
 
 # Update the input metadata dictionary for the output export
-output_profile.update(
-    dtype=rasterio.uint8,
-    count=1,
-    nodata=nodata_value,
-    compress='lzw'
-)
+output_profile.update({
+    'nodata': nodata_value,
+    'dtype': 'uint8',
+    'compress': 'lzw',
+    'bigtiff': 'NO',
+    'tiled': True,
+    'blockxsize': 512,
+    'blockysize': 512,
+    'count': 1
+})
 
 # Export final raster
 print('\tExporting vegetation raster...')

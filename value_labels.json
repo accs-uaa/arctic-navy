@@ -23,5 +23,6 @@
     "171": "Arctic Wet Meadow (Riverine/Mineral)",
     "173": "Disturbed Vegetation",
     "174": "Infrastructure",
-    "176": "Water"
+    "176": "Terrestrial Water",
+	"177": "Marine/Estuarine Water"
 }

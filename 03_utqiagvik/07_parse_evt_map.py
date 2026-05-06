@@ -2,7 +2,7 @@
 # ---------------------------------------------------------------------------
 # Parse EVT map 1:2,500 scale
 # Author: Timm Nawrocki
-# Last Updated: 2026-03-21
+# Last Updated: 2026-04-23
 # Usage: Must be executed in a Python 3.12+ installation.
 # Description: "Parse EVT map 1:2,500 scale" implements a programmatic key to creat an existing vegetation type map at 1:2,500 scale based on surficial features, foliar cover, and ancillary data.
 # ---------------------------------------------------------------------------
@@ -23,7 +23,15 @@ import dbf
 from akutils import *
 
 # Set no data
-nodata_value = 255
+nodata_value = np.uint8(255)
+
+# Define year variable
+if region == 'IcyCape':
+    year = 2020
+elif region == 'McIntyre':
+    year = 2022
+else:
+    year = 2024
 
 #### SET UP DIRECTORIES, FILES, AND FIELDS
 ####____________________________________________________
@@ -39,7 +47,7 @@ input_folder = os.path.join(project_folder, 'Data_Input/rasterized_data')
 distance_folder = os.path.join(project_folder, 'Data_Input/distance_data/processed')
 foliar_folder = os.path.join(project_folder, 'Data_Output/foliar_data')
 surficial_folder = os.path.join(project_folder, 'Data_Output/surficial_data')
-output_folder = os.path.join(project_folder, 'Data_Output/vegetation_data/unprocessed')
+output_folder = os.path.join(project_folder, 'Data_Output/vegetation_data')
 
 # Define input files
 label_input = os.path.join(repository_folder, 'value_labels.json')
@@ -64,7 +72,7 @@ willowcor_input = os.path.join(input_folder, f'{region}_Correction_Willow_0.5m_3
 distcor_input = os.path.join(input_folder, f'{region}_Correction_Disturbed_0.5m_3338.tif')
 
 # Define output file
-vegetation_output = os.path.join(output_folder, f'{region}_Vegetation_0.5m_3338.tif')
+vegetation_output = os.path.join(output_folder, f'{region}_Vegetation_{year}_0.5m_3338.tif')
 
 #### PARSE EXISTING VEGETATION TYPES
 ####____________________________________________________
@@ -79,9 +87,9 @@ erivag_raster = rasterio.open(erivag_input)
 halgra_raster = rasterio.open(halgra_input)
 nerishr_raster = rasterio.open(nerishr_input)
 sphagn_raster = rasterio.open(sphagn_input)
+vacvit_raster = rasterio.open(vacvit_input)
 wetsed_raster = rasterio.open(wetsed_input)
 water_raster = rasterio.open(water_input)
-vacvit_raster = rasterio.open(vacvit_input)
 coastal_raster = rasterio.open(coastal_input)
 infrastructure_raster = rasterio.open(infrastructure_input)
 watercor_raster = rasterio.open(watercor_input)
@@ -101,8 +109,8 @@ output_profile.update({
     'compress': 'lzw',
     'bigtiff': 'NO',
     'tiled': True,
-    'blockxsize': 256,
-    'blockysize': 256
+    'blockxsize': 512,
+    'blockysize': 512
 })
 
 # Define a function to read raster block
@@ -270,12 +278,19 @@ with rasterio.open(vegetation_output, 'w', **output_profile) as dst:
                              & (surficial_block == 3),
                              143, out_block)
 
-        #### MANUAL MODIFICATIONS
+        #### SPLIT MARINE AND TERRESTRIAL WATER
 
-        # 176. Water
-        out_block = np.where(((out_block == 0) & (surficial_block == 1))
-                             | (watercor_block == 1),
+        # 176. Terrestrial Water
+        out_block = np.where((((out_block == 0) & (surficial_block == 1)) | (watercor_block == 1))
+                             & (coastal_block != 1),
                              176, out_block)
+
+        # 177. Marine/Estuarine Water
+        out_block = np.where((((out_block == 0) & (surficial_block == 1)) | (watercor_block == 1))
+                             & (coastal_block == 1),
+                             177, out_block)
+
+        #### MANUAL MODIFICATIONS
 
         # 174. Infrastructure
         out_block = np.where((infrastructure_block == 1) & (watercor_block != 1),
@@ -342,9 +357,10 @@ with rasterio.open(vegetation_output, 'w', **output_profile) as dst:
 end_timing(iteration_start)
 
 # Close rasters
-for raster in [area_raster, surficial_raster, dryas_raster, dsalix_raster, erivag_raster,
-               halgra_raster, nerishr_raster, wetsed_raster, water_raster, coastal_raster,
-               infrastructure_raster, watercor_raster, saltcor_raster]:
+for raster in [area_raster, surficial_raster, bromos_raster, dryas_raster, dsalix_raster, erivag_raster,
+               halgra_raster, nerishr_raster, sphagn_raster, vacvit_raster, wetsed_raster, water_raster,
+               coastal_raster, infrastructure_raster, watercor_raster, saltcor_raster, willowcor_raster,
+               distcor_raster]:
     raster.close()
 
 #### BUILD RASTER PYRAMIDS (OVERVIEWS)

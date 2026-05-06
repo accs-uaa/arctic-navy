@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 # ---------------------------------------------------------------------------
-# Installation summary for Icy Cape
+# Installation summary for Point McIntyre
 # Author: Timm Nawrocki
 # Last Updated: 2026-04-23
 # Usage: Execute in Python 3.9+.
-# Description: "Installation summary for Icy Cape" calculates summary plots for Icy Cape.
+# Description: "Installation summary for Point McIntyre" calculates summary plots for Point McIntyre.
 # ---------------------------------------------------------------------------
 
 # Define region and AKVEG version
-region = 'IcyCape'
+region = 'McIntyre'
 version = 'v2.1'
 plot_height = 400
 
@@ -94,10 +94,8 @@ with open(label_input, 'r') as f:
     raw_labels = json.load(f)
 value_labels = {
     int(k): v.replace('Arctic ', '')
-    .replace('Tussock Dwarf Shrub Tundra', 'Tussock Dwarf<br>Shrub Tundra')
-    .replace('Coastal Dwarf Willow Graminoid', 'Coastal Dwarf<br>Willow Gramin.')
-    .replace('Ericaceous(-Dryas-Willow) Dwarf Shrub', 'Ericaceous(-Dryas-Willow)<br>Dwarf Shrub')
     .replace('Brown Moss-Sedge Peatland, Minerotrophic', 'Brown Moss-Sedge Peatland,<br>Minerotrophic')
+    .replace('Sphagnum-Sedge Peatland, Ombrotrophic', 'Sphagnum-Sedge<br>Peatland,<br>Ombrotrophic')
     for k, v in raw_labels.items() if int(k) in unique_values
 }
 
@@ -211,7 +209,7 @@ diagnostic_names = {
     'dryas': 'Dryas Shrubs',
     'dsalix': 'Willow Dwarf Shrubs',
     'feather': 'Feathermosses',
-    'halgra': 'Halophytic<br>Graminoids',
+    'halgra': 'Halophytic Graminoids',
     'erivag': 'Tussock Cottongrass',
     'lichen': 'Lichens',
     'ndsalix': 'Willow Shrubs',
@@ -227,7 +225,7 @@ diagnostic_colors = {
     'Dryas Shrubs': '#446589',
     'Willow Dwarf Shrubs': '#6699CD',
     'Feathermosses': '#B4D79E',
-    'Halophytic<br>Graminoids': '#00A884',
+    'Halophytic Graminoids': '#00A884',
     'Tussock Cottongrass': '#942A2A',
     'Lichens': '#FFFFBE',
     'Willow Shrubs': '#448970',

@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 # ---------------------------------------------------------------------------
-# Installation summary for Icy Cape
+# Installation summary for Utqiagvik
 # Author: Timm Nawrocki
-# Last Updated: 2026-04-23
+# Last Updated: 2026-04-24
 # Usage: Execute in Python 3.9+.
-# Description: "Installation summary for Icy Cape" calculates summary plots for Icy Cape.
+# Description: "Installation summary for Utqiagvik" calculates summary plots for Utqiagvik.
 # ---------------------------------------------------------------------------
 
 # Define region and AKVEG version
-region = 'IcyCape'
+region = 'Utqiagvik'
 version = 'v2.1'
 plot_height = 400
 
@@ -50,7 +50,7 @@ input_folder = os.path.join(project_folder, 'Data_Input')
 output_folder = os.path.join(project_folder, 'Data_Output')
 
 # Define input files
-zone_input = os.path.join(input_folder, f'region_data/{region}_Installation_3338.shp')
+zone_input = os.path.join(input_folder, f'region_data/Barrow_Installation_Main_3338.shp')
 evt_input = os.path.join(output_folder, f'vegetation_data/{region}_Vegetation_{year}_0.5m_3338.tif')
 coast10_input = os.path.join(input_folder, f'rasterized_data/{region}_CoastalZone_10m_3338.tif')
 label_input = os.path.join(repository_folder, 'value_labels.json')
@@ -95,9 +95,10 @@ with open(label_input, 'r') as f:
 value_labels = {
     int(k): v.replace('Arctic ', '')
     .replace('Tussock Dwarf Shrub Tundra', 'Tussock Dwarf<br>Shrub Tundra')
-    .replace('Coastal Dwarf Willow Graminoid', 'Coastal Dwarf<br>Willow Gramin.')
-    .replace('Ericaceous(-Dryas-Willow) Dwarf Shrub', 'Ericaceous(-Dryas-Willow)<br>Dwarf Shrub')
+    .replace('Coastal Dwarf Willow Graminoid', 'Coastal Dwarf<br>Willow<br>Graminoid')
+    .replace('Ericaceous(-Dryas-Willow) Dwarf Shrub', 'Ericaceous<br>(-Dryas-Willow)<br>Dwarf Shrub')
     .replace('Brown Moss-Sedge Peatland, Minerotrophic', 'Brown Moss-Sedge Peatland,<br>Minerotrophic')
+    .replace('Sphagnum-Sedge Peatland, Ombrotrophic', 'Sphagnum-Sedge Peatland,<br>Ombrotrophic')
     for k, v in raw_labels.items() if int(k) in unique_values
 }
 
@@ -211,8 +212,8 @@ diagnostic_names = {
     'dryas': 'Dryas Shrubs',
     'dsalix': 'Willow Dwarf Shrubs',
     'feather': 'Feathermosses',
-    'halgra': 'Halophytic<br>Graminoids',
-    'erivag': 'Tussock Cottongrass',
+    'halgra': 'Halophytic Graminoids',
+    'erivag': 'Tussock<br>Cottongrass',
     'lichen': 'Lichens',
     'ndsalix': 'Willow Shrubs',
     'nerishr': 'Needleleaf Ericaceous Shrubs',
@@ -227,8 +228,8 @@ diagnostic_colors = {
     'Dryas Shrubs': '#446589',
     'Willow Dwarf Shrubs': '#6699CD',
     'Feathermosses': '#B4D79E',
-    'Halophytic<br>Graminoids': '#00A884',
-    'Tussock Cottongrass': '#942A2A',
+    'Halophytic Graminoids': '#00A884',
+    'Tussock<br>Cottongrass': '#942A2A',
     'Lichens': '#FFFFBE',
     'Willow Shrubs': '#448970',
     'Needleleaf Ericaceous Shrubs': '#9EBBD7',
