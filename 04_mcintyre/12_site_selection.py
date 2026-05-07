@@ -66,7 +66,7 @@ sample_input = os.path.join(repository_folder, 'value_samples.json')
 
 # Define output files
 strata_output = os.path.join(output_folder, f'monitoring_sites/{region}_Strata_v1p0_3338.shp')
-site_output = os.path.join(output_folder, f'monitoring_sites/{region}_{seed}_Sites_v1p0_3338.shp')
+site_output = os.path.join(output_folder, f'monitoring_sites/{region}_Sites_v1p0_3338.shp')
 
 #### CONVERT VEGETATION RASTER TO POLYGON
 ####____________________________________________________

@@ -15,7 +15,7 @@ total_sites = 18
 min_distance_stratum = 150
 min_distance_all = 80
 omitted_values = [174, 176, 177] # Omit sampling from infrastructure and water
-seed = 3
+seed = 1
 
 # Import packages
 import os
@@ -66,7 +66,7 @@ sample_input = os.path.join(repository_folder, 'value_samples.json')
 
 # Define output files
 strata_output = os.path.join(output_folder, f'monitoring_sites/{region}_Strata_v1p0_3338.shp')
-site_output = os.path.join(output_folder, f'monitoring_sites/{region}_{seed}_Sites_v1p0_3338.shp')
+site_output = os.path.join(output_folder, f'monitoring_sites/{region}_Sites_v1p0_3338.shp')
 
 #### CONVERT VEGETATION RASTER TO POLYGON
 ####____________________________________________________
@@ -302,25 +302,25 @@ site_data = site_data[column_order]
 
 print('Applying manual site overrides...')
 
-# Apply manual updates to NVBR-008
-if 'NVBR-008' in site_data['site_code'].values:
-    row_idx_008 = site_data['site_code'] == 'NVBR-008'
-    site_data.loc[row_idx_008, 'geometry'] = Point(-97571.74, 2370574.59)
-    site_data.loc[row_idx_008, 'value'] = 180
-    site_data.loc[row_idx_008, 'stratum'] = value_labels.get(180, 'Unknown')
-    site_data.loc[row_idx_008, 'modified'] = 'true'
+# Apply manual updates to NVBR-011
+if 'NVBR-011' in site_data['site_code'].values:
+    row_idx_011 = site_data['site_code'] == 'NVBR-011'
+    site_data.loc[row_idx_011, 'geometry'] = Point(-97571.74, 2370574.59)
+    site_data.loc[row_idx_011, 'value'] = 180
+    site_data.loc[row_idx_011, 'stratum'] = value_labels.get(180, 'Unknown')
+    site_data.loc[row_idx_011, 'modified'] = 'true'
 else:
-    print('Notice: NVBR-008 not found. Override skipped.')
+    print('Notice: NVBR-011 not found. Override skipped.')
 
-# Apply manual updates to NVBR-001
-if 'NVBR-001' in site_data['site_code'].values:
-    row_idx_001 = site_data['site_code'] == 'NVBR-001'
-    site_data.loc[row_idx_001, 'geometry'] = Point(-96547.82, 2370579.50)
-    site_data.loc[row_idx_001, 'value'] = 180
-    site_data.loc[row_idx_001, 'stratum'] = value_labels.get(180, 'Unknown')
-    site_data.loc[row_idx_001, 'modified'] = 'true'
+# Apply manual updates to NVBR-015
+if 'NVBR-015' in site_data['site_code'].values:
+    row_idx_015 = site_data['site_code'] == 'NVBR-015'
+    site_data.loc[row_idx_015, 'geometry'] = Point(-96547.82, 2370579.50)
+    site_data.loc[row_idx_015, 'value'] = 180
+    site_data.loc[row_idx_015, 'stratum'] = value_labels.get(180, 'Unknown')
+    site_data.loc[row_idx_015, 'modified'] = 'true'
 else:
-    print('Notice: NVBR-001 not found. Override skipped.')
+    print('Notice: NVBR-015 not found. Override skipped.')
 
 # Export to Shapefile
 site_data.to_file(site_output)
