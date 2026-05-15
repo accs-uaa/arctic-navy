@@ -21,8 +21,8 @@ from rasterstats import zonal_stats
 from akutils import *
 
 # Define diagnostic sets
-diagnostic_sets = ['betshr', 'dryas', 'dsalix', 'feather', 'halgra', 'erivag', 'lichen',
-                   'ndsalix', 'nerishr', 'sphagn', 'waterterrestrial', 'wetforb', 'wetsed']
+diagnostic_sets = ['betshr', 'dryas', 'dsalix', 'erivag', 'feather', 'halgra', 'lichen',
+                   'ndsalix', 'nerishr', 'sphagn', 'terrestrialwater', 'wetforb', 'wetsed']
 
 #### SET UP DIRECTORIES, FILES, AND FIELDS
 ####____________________________________________________
